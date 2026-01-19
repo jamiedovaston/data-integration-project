@@ -31,6 +31,9 @@ public class NetworkedPlayerMovementComponent : NetworkBehaviour, IPlayerMovemen
     [SerializeField] private float gravity = 40.1f;
     [SerializeField] private float jumpSpeed = 8f;
 
+    [Header("Animation")]
+    [SerializeField] private Animator m_Animator;
+
     Vector3 moveDirection = Vector3.zero;
     Vector3 currentVelocity = Vector3.zero;
 
@@ -60,33 +63,29 @@ public class NetworkedPlayerMovementComponent : NetworkBehaviour, IPlayerMovemen
     {
         float targetSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
-        // Direction multipliers
         float forwardMultiplier = 1.0f;
         float backwardMultiplier = 0.9f;
         float strafeMultiplier = 0.75f;
 
-        // Input split
         float fwd = Mathf.Clamp(Input_Move.y, 0f, 1f) * forwardMultiplier;
         float back = Mathf.Abs(Mathf.Clamp(Input_Move.y, -1f, 0f)) * backwardMultiplier;
         float side = Mathf.Abs(Input_Move.x) * strafeMultiplier;
 
-        // Combine final directional multipliers
+        m_Animator.SetFloat("InpX", Input_Move.x * (isSprinting ? 2 : 1));
+        m_Animator.SetFloat("InpY", Input_Move.y * (isSprinting ? 2 : 1));
+
         Vector3 desired =
             transform.forward * (fwd - back) +
             transform.right * (Input_Move.x * strafeMultiplier);
 
-        // Apply speed
         desired *= targetSpeed;
 
-        // Smooth accel/decel
         currentVelocity = Vector3.Lerp(currentVelocity, desired, acceleration * Time.deltaTime);
 
-        // Preserve vertical velocity
         float verticalVel = moveDirection.y;
         moveDirection = currentVelocity;
         moveDirection.y = verticalVel;
 
-        // gravity + jump handling
         if (m_Controller.isGrounded)
         {
             if (Input_JumpingHeld)
