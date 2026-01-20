@@ -16,7 +16,6 @@ public interface IPlayerShootable
 public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
 {
     private CinemachineCamera m_Camera;
-    private LineRenderer m_Laser;
 
     [Header("Shooter Settings")]
     [SerializeField] private WeaponData m_WeaponData;
@@ -47,20 +46,6 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
         m_WeaponModel = Instantiate(m_WeaponData.m_Model, m_WeaponHand);
     }
 
-    public override void OnNetworkSpawn()
-    {
-        if (!NetworkObject.IsLocalPlayer)
-            return;
-
-        m_Laser = m_WeaponModel.gameObject.AddComponent<LineRenderer>();
-        m_Laser.positionCount = 2;
-        m_Laser.material = new Material(Shader.Find("Unlit/Color"));
-        m_Laser.material.color = Color.red;
-        m_Laser.startWidth = 0.02f;
-        m_Laser.endWidth = 0.02f;
-        m_Laser.useWorldSpace = true;
-    }
-
     private void Update()
     {
         if (NetworkObject.IsLocalPlayer)
@@ -80,44 +65,7 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
 
             currentAimFOV = Mathf.Lerp(currentAimFOV, (Input_Aiming ? m_AimFOV : m_NeutralFOV), m_AimDelay * Time.deltaTime);
             m_Camera.Lens.FieldOfView = currentAimFOV;
-
-            UpdateLaser();
         }
-    }
-
-    private void UpdateLaser()
-    {
-        if (!IsLocalPlayer || m_Laser == null)
-            return;
-        if (m_WeaponModel == null || m_Camera == null)
-            return;
-
-        Vector3 cameraOrigin = m_Camera.transform.position;
-        Vector3 cameraDir = m_Camera.transform.forward;
-
-        // Step 1: Camera ray determines aim point
-        Vector3 aimPoint = cameraOrigin + cameraDir * m_MaxLaserDistance;
-
-        if (Physics.Raycast(cameraOrigin, cameraDir, out RaycastHit camHit, m_MaxLaserDistance))
-        {
-            aimPoint = camHit.point;
-        }
-
-        // Step 2: Muzzle ray goes toward aim point
-        Vector3 muzzleOrigin = m_WeaponModel.m_Muzzle.position;
-        Vector3 muzzleDir = (aimPoint - muzzleOrigin).normalized;
-
-        Vector3 laserEnd = muzzleOrigin + muzzleDir * m_MaxLaserDistance;
-
-        if (Physics.Raycast(muzzleOrigin, muzzleDir, out RaycastHit muzzleHit, m_MaxLaserDistance))
-        {
-            laserEnd = muzzleHit.point;
-        }
-
-        // Apply to line renderer
-        if (m_Laser == null) return;
-        m_Laser.SetPosition(0, muzzleOrigin);
-        m_Laser.SetPosition(1, laserEnd);
     }
 
     void IPlayerShootable.Handle_AimPerformed(InputAction.CallbackContext context)
