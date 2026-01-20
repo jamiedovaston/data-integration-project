@@ -34,7 +34,7 @@ public class NetworkedPlayer : NetworkBehaviour
 
         m_Look = GetComponent<IPlayerLookable>();
         Debug.Assert(m_Look != null, "Look component is missing from player!", this);
-        m_Look.Initialise(m_Orientation);
+        m_Look.Initialise(m_Orientation, m_Camera);
 
         m_Shoot = GetComponent<IPlayerShootable>();
         Debug.Assert(m_Shoot != null, "Shoot component is missing from player!", this);
@@ -64,6 +64,9 @@ public class NetworkedPlayer : NetworkBehaviour
 
         m_InputActions.Player.Look.performed += m_Look.Handle_LookAction;
         m_InputActions.Player.Look.canceled += m_Look.Handle_LookAction;
+
+        m_InputActions.Player.LeanR.performed += m_Look.Handle_LeanRPerformed;
+        m_InputActions.Player.LeanL.performed += m_Look.Handle_LeanLPerformed;
 
         m_InputActions.Player.Attack.performed += m_Shoot.Handle_ShootPerformed;
         m_InputActions.Player.Attack.canceled += m_Shoot.Handle_ShootCanceled;
@@ -95,6 +98,9 @@ public class NetworkedPlayer : NetworkBehaviour
 
         m_InputActions.Player.Look.performed -= m_Look.Handle_LookAction;
         m_InputActions.Player.Look.canceled -= m_Look.Handle_LookAction;
+
+        m_InputActions.Player.LeanR.performed -= m_Look.Handle_LeanRPerformed;
+        m_InputActions.Player.LeanL.performed -= m_Look.Handle_LeanLPerformed;
 
         m_InputActions.Player.Attack.performed -= m_Shoot.Handle_ShootPerformed;
         m_InputActions.Player.Attack.canceled -= m_Shoot.Handle_ShootCanceled;

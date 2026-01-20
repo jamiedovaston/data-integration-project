@@ -1532,6 +1532,7 @@ MonoBehaviour:
   lookSpeed: 80
   verticalClamp: 70
   smoothTime: 0.05
+  m_LeanSpeed: 10
   m_Spine: {fileID: 4309532533811062878}
 --- !u!114 &5913603327798956919
 MonoBehaviour:
@@ -1571,10 +1572,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9dedeaefb63c424594d584137b434a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Delay: 0.3
+  m_WeaponData: {fileID: 11400000, guid: d8c101f9513faa9488c9a61ef6faed07, type: 2}
+  m_WeaponHand: {fileID: 7910915437232038778}
   m_PlayerLayer:
     serializedVersion: 2
     m_Bits: 8
+  m_Laser: {fileID: 0}
+  m_MaxLaserDistance: 100
   m_NeutralFOV: 60
   m_AimFOV: 30
   m_AimDelay: 2

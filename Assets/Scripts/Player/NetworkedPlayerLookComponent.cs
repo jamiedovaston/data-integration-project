@@ -1,21 +1,26 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Cinemachine;
 
 public interface IPlayerLookable
 {
-    void Initialise(Transform orientation);
+    void Initialise(Transform orientation, CinemachineCamera m_Camera);
     void Handle_LookAction(InputAction.CallbackContext context);
+    void Handle_LeanRPerformed(InputAction.CallbackContext context);
+    void Handle_LeanLPerformed(InputAction.CallbackContext context);
 }
 
 public class NetworkedPlayerLookComponent : NetworkBehaviour, IPlayerLookable
 {
     Transform m_Orientation;
+    CinemachineCamera m_Camera;
 
     [Header("Look Settings")]
-    [SerializeField] float lookSpeed = 120f;
-    [SerializeField] float verticalClamp = 70f;
-    [SerializeField] float smoothTime = 0.05f;
+    [SerializeField] private float lookSpeed = 120f;
+    [SerializeField] private float verticalClamp = 70f;
+    [SerializeField] private float smoothTime = 0.05f;
+    [SerializeField] private float m_LeanSpeed = 10.0f;
 
     [Header("Animation Settings")]
     [SerializeField] private Transform m_Spine;
@@ -31,9 +36,14 @@ public class NetworkedPlayerLookComponent : NetworkBehaviour, IPlayerLookable
     private Vector2 smoothedLookInput;
     private Vector2 smoothInputVel;
 
-    public void Initialise(Transform m_Orientation)
+    private float currentSideView;
+
+    private bool Input_IsLeaningRight = true;
+
+    void IPlayerLookable.Initialise(Transform m_Orientation, CinemachineCamera m_Camera)
     {
         this.m_Orientation = m_Orientation;
+        this.m_Camera = m_Camera;
     }
 
     private void Update()
@@ -63,11 +73,18 @@ public class NetworkedPlayerLookComponent : NetworkBehaviour, IPlayerLookable
         m_Orientation.localRotation = Quaternion.Euler(pitch, 0f, 0f);
 
         m_Spine.rotation = Quaternion.Euler(pitch, yaw, 0.0f);
+
+        currentSideView = Mathf.Lerp(currentSideView, (Input_IsLeaningRight ? 1 : 0), m_LeanSpeed * Time.deltaTime);
+        m_Camera.GetComponent<CinemachineThirdPersonFollow>().CameraSide = currentSideView;
     }
 
-    public void Handle_LookAction(InputAction.CallbackContext context)
+    void IPlayerLookable.Handle_LookAction(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
         rawLookInput = context.ReadValue<Vector2>();
     }
+
+    void IPlayerLookable.Handle_LeanRPerformed(InputAction.CallbackContext context) => Input_IsLeaningRight = true;
+
+    void IPlayerLookable.Handle_LeanLPerformed(InputAction.CallbackContext context) => Input_IsLeaningRight = false;
 }

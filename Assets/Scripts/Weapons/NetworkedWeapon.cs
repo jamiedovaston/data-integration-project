@@ -1,16 +1,7 @@
-using UnityEngine;
+using JetBrains.Annotations;
+using Unity.Netcode;
 
-public class NetworkedWeapon : MonoBehaviour
+public class NetworkedWeapon : NetworkBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
 }
