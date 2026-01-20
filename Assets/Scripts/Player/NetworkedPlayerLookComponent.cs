@@ -17,6 +17,9 @@ public class NetworkedPlayerLookComponent : NetworkBehaviour, IPlayerLookable
     [SerializeField] float verticalClamp = 70f;
     [SerializeField] float smoothTime = 0.05f;
 
+    [Header("Animation Settings")]
+    [SerializeField] private Transform m_Spine;
+
     private float targetYaw;
     private float targetPitch;
     private float yaw;
@@ -58,6 +61,8 @@ public class NetworkedPlayerLookComponent : NetworkBehaviour, IPlayerLookable
         
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         m_Orientation.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+
+        m_Spine.rotation = Quaternion.Euler(pitch, yaw, 0.0f);
     }
 
     public void Handle_LookAction(InputAction.CallbackContext context)
