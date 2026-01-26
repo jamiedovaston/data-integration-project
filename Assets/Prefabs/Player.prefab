@@ -1572,16 +1572,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9dedeaefb63c424594d584137b434a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_WeaponData: {fileID: 11400000, guid: d8c101f9513faa9488c9a61ef6faed07, type: 2}
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_WeaponData: {fileID: 11400000, guid: c52ecef97bafc2c4d95c2756d1be5769, type: 2}
   m_WeaponHand: {fileID: 7910915437232038778}
   m_PlayerLayer:
     serializedVersion: 2
     m_Bits: 8
-  m_Laser: {fileID: 0}
-  m_MaxLaserDistance: 100
+  m_WeaponVFX:
+  - {fileID: 100006, guid: f47cb9d88f4bc6c4bb7441e962c2c1a5, type: 3}
+  - {fileID: 8585768793107558385, guid: a3cb058c9e2683244af52fff80d83c3b, type: 3}
   m_NeutralFOV: 60
   m_AimFOV: 30
   m_AimDelay: 2
+  m_SpreadAngle: 1.5
 --- !u!114 &4110288812693197122
 MonoBehaviour:
   m_ObjectHideFlags: 0

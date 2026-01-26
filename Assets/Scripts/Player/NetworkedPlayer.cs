@@ -1,12 +1,8 @@
 using System;
-using System.Globalization;
 using Unity.Cinemachine;
 using Unity.Netcode;
-using Unity.Netcode.Components;
 using UnityEngine;
-using UnityEngine.Animations;
-using UnityEngine.EventSystems;
-using static UnityEngine.EventSystems.StandaloneInputModule;
+using UnityEngine.InputSystem;
 
 [SelectionBase]
 [RequireComponent(typeof(CharacterController))]
@@ -21,6 +17,8 @@ public class NetworkedPlayer : NetworkBehaviour
 
     [SerializeField] private Transform m_Orientation;
     [SerializeField] private CinemachineCamera m_Camera;
+
+    public static Action<InputAction.CallbackContext> OnPlayerEscapePressed;
 
     private void Awake()
     {
@@ -76,6 +74,8 @@ public class NetworkedPlayer : NetworkBehaviour
 
         m_InputActions.Player.Crouch.performed += m_Movement.Handle_SlidePerformed;
         m_InputActions.Player.Crouch.canceled += m_Movement.Handle_SlideCanceled;
+
+        m_InputActions.System.Escape.performed += HandleEscape;
     }
 
     public override void OnNetworkDespawn()
@@ -110,5 +110,9 @@ public class NetworkedPlayer : NetworkBehaviour
 
         m_InputActions.Player.Crouch.performed -= m_Movement.Handle_SlidePerformed;
         m_InputActions.Player.Crouch.canceled -= m_Movement.Handle_SlideCanceled;
+
+        m_InputActions.System.Escape.performed -= HandleEscape;
     }
+
+    private void HandleEscape(InputAction.CallbackContext ctx) => OnPlayerEscapePressed?.Invoke(ctx);
 }
