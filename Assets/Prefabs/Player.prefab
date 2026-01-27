@@ -1498,8 +1498,8 @@ MonoBehaviour:
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
+  AutoObjectParentSync: 0
+  SyncOwnerTransformWhenParented: 0
   AllowOwnerToParent: 0
 --- !u!114 &8308683879612533081
 MonoBehaviour:
@@ -1579,8 +1579,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   m_WeaponVFX:
-  - {fileID: 100006, guid: f47cb9d88f4bc6c4bb7441e962c2c1a5, type: 3}
   - {fileID: 8585768793107558385, guid: a3cb058c9e2683244af52fff80d83c3b, type: 3}
+  m_Bullet: {fileID: 8109632556580272275, guid: 2359828375818084f91443309868f824, type: 3}
   m_NeutralFOV: 60
   m_AimFOV: 30
   m_AimDelay: 2

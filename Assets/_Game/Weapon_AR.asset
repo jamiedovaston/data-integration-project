@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: Weapon_AR
   m_EditorClassIdentifier: 
   <m_Model>k__BackingField: {fileID: 296849212841630873, guid: f0fd60de0faf166439e23e4c21ada8c3, type: 3}
-  <m_ShootDelay>k__BackingField: 0.3
+  <m_ShootDelay>k__BackingField: 0.1
+  <m_Range>k__BackingField: 15

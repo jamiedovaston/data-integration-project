@@ -93,7 +93,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 112000002, guid: 82626804eac83ae439f7869df646b81e, type: 2}
+  m_LightingDataAsset: {fileID: 112000004, guid: 82626804eac83ae439f7869df646b81e, type: 2}
   m_LightingSettings: {fileID: 0}
 --- !u!196 &4
 NavMeshSettings:
@@ -1151,6 +1151,7 @@ GameObject:
   - component: {fileID: 594238044}
   - component: {fileID: 594238045}
   - component: {fileID: 594238046}
+  - component: {fileID: 594238047}
   m_Layer: 0
   m_Name: Networked Player Manager
   m_TagString: Untagged
@@ -1216,6 +1217,19 @@ MonoBehaviour:
   - {fileID: 708663169}
   - {fileID: 1013029465}
   - {fileID: 1645763128}
+--- !u!114 &594238047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 594238043}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d6c983d225289542a7dcc168d35e409, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &634415926
 GameObject:
   m_ObjectHideFlags: 0

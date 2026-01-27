@@ -1,8 +1,7 @@
-using Best.HTTP;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using UnityEditor.PackageManager;
 using UnityEngine;
 
 public class PlayerSessionManager : NetworkBehaviour
@@ -26,7 +25,7 @@ public class PlayerSessionManager : NetworkBehaviour
         if (!IsServer) return;
 
         NetworkManager.OnClientDisconnectCallback += OnClientDisconnectedCallback;
-        NetworkManager.OnClientDisconnectCallback += OnClientConnectedCallback;
+        NetworkManager.OnClientConnectedCallback += OnClientConnectedCallback;
 
         if (IsHost)
         {
@@ -40,22 +39,26 @@ public class PlayerSessionManager : NetworkBehaviour
         if (!IsServer) return;
 
         NetworkManager.OnClientDisconnectCallback -= OnClientDisconnectedCallback;
-        NetworkManager.OnClientDisconnectCallback -= OnClientConnectedCallback;
+        NetworkManager.OnClientConnectedCallback -= OnClientConnectedCallback;
 
         if (IsHost)
-        {
+        { 
             NetworkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
         }
     }
 
     private void OnClientConnectedCallback(ulong obj)
     {
-        throw new NotImplementedException();
+        if (!IsServer) return;
+        if (NetworkManager.LocalClientId != obj)
+            SpawnPlayer(obj);
     }
 
     private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
     {
         response.Pending = true;
+        response.CreatePlayerObject = false;
+        response.PlayerPrefabHash = null;
 
         StartCoroutine(PlayerServices.C_AuthorizeNewPlayer(
         data =>
@@ -65,14 +68,8 @@ public class PlayerSessionManager : NetworkBehaviour
             ClientInMatch.Add(clientID, false);
             RelationalClientToUserData.Add(clientID, data);
 
-            response.CreatePlayerObject = false;
-            response.PlayerPrefabHash = null;
-            response.Position = m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position;
-
             response.Approved = true;
             response.Pending = false;
-
-            SpawnPlayer(clientID);
         },
         () =>
         {
@@ -107,14 +104,13 @@ public class PlayerSessionManager : NetworkBehaviour
         GameObject obj = Instantiate(m_PlayerObject, m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position, Quaternion.identity);
         obj.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID);
 
-        Debug.Log($"Authorized new player! Username: { RelationalClientToUserData[clientID].username } ID: { RelationalClientToUserData[clientID].id }");
+        Debug.Log($"Authorized new player! Username: {RelationalClientToUserData[clientID].username} ID: {RelationalClientToUserData[clientID].id}");
     }
 
     private void OnClientDisconnectedCallback(ulong clientID)
     {
         if(NetworkManager.ConnectedClients.ContainsKey(clientID))
             NetworkManager.ConnectedClients[clientID].PlayerObject.Despawn();
-
 
         if (ClientInMatch.ContainsKey(clientID))
             ClientInMatch.Remove(clientID);

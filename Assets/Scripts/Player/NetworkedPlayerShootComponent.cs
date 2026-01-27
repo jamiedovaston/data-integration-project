@@ -1,7 +1,5 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
@@ -25,6 +23,7 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
     [SerializeField] private Transform m_WeaponHand;
     [SerializeField] private LayerMask m_PlayerLayer;
     [SerializeField] private List<GameObject> m_WeaponVFX;
+    [SerializeField] private GameObject m_Bullet;
 
     [Header("Aim Settings")]
     [SerializeField] private float m_NeutralFOV = 60.0f;
@@ -32,7 +31,8 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
     [SerializeField] private float m_AimDelay = 3.0f; 
     
     [Header("Accuracy Settings")]
-    [SerializeField] private float m_SpreadAngle = 1.5f;
+    [SerializeField] private float m_HipFireSpreadAngle = 2.0f;
+    [SerializeField] private float m_AimSpreadAngle = .5f;
 
     private WeaponModel m_WeaponModel;
 
@@ -52,45 +52,86 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
 
     private void Update()
     {
-        if (NetworkObject.IsLocalPlayer)
+        if (!NetworkObject.IsLocalPlayer)
+            return;
+
+        currentAimFOV = Mathf.Lerp(currentAimFOV, Input_Aiming ? m_AimFOV : m_NeutralFOV, m_AimDelay * Time.deltaTime);
+        m_Camera.Lens.FieldOfView = currentAimFOV;
+
+        if (lastTimeShot + m_WeaponData.m_ShootDelay > Time.fixedTime)
+            return;
+
+        if (!Input_Shooting)
+            return;
+
+        lastTimeShot = Time.fixedTime;
+
+        Vector3 shootOrigin = m_WeaponModel.m_Muzzle.position;
+        Vector3 shootTarget;
+
+        RaycastHit hit;
+        bool hitSomething = Physics.Raycast(m_Camera.transform.position, m_Camera.transform.forward, out hit, Mathf.Infinity);
+
+        if (hitSomething)
         {
-            if (lastTimeShot + m_WeaponData.m_ShootDelay <= Time.fixedTime && Input_Shooting)
-            {
-                lastTimeShot = Time.fixedTime;
-
-                RaycastHit hit;
-
-                if (Physics.Raycast(m_Camera.transform.position, m_Camera.transform.forward, out hit, Mathf.Infinity))
-                {
-                    RaycastHit hit2;
-                    Vector3 baseDirection = (hit.point - m_WeaponModel.m_Muzzle.position).normalized;
-
-                    Quaternion spreadRotation = Quaternion.Euler(
-                        UnityEngine.Random.Range(-m_SpreadAngle, m_SpreadAngle),
-                        UnityEngine.Random.Range(-m_SpreadAngle, m_SpreadAngle),
-                        0f
-                    );
-
-                    Vector3 direction = spreadRotation * baseDirection;
-                    m_WeaponData.Fire(m_WeaponModel.m_Muzzle.position, direction, out hit2);
-                    ShootRpc(transform.position.x, transform.position.z);
-
-                    foreach (GameObject vFX in m_WeaponVFX)
-                    {
-                        Destroy(Instantiate(vFX, m_WeaponModel.m_Muzzle.position, Quaternion.LookRotation(direction)), 1.0f);
-                    }
-                }
-            }
-
-            currentAimFOV = Mathf.Lerp(currentAimFOV, (Input_Aiming ? m_AimFOV : m_NeutralFOV), m_AimDelay * Time.deltaTime);
-            m_Camera.Lens.FieldOfView = currentAimFOV;
+            shootTarget = hit.point;
         }
+        else
+        {
+            shootTarget = m_Camera.transform.position + m_Camera.transform.forward * m_WeaponData.m_Range;
+        }
+
+        Vector3 baseDirection = (shootTarget - shootOrigin).normalized;
+
+        float spreadAngle = Input_Aiming ? m_AimSpreadAngle : m_HipFireSpreadAngle;
+        Quaternion spreadRotation = Quaternion.Euler(
+            UnityEngine.Random.Range(-spreadAngle, spreadAngle),
+            UnityEngine.Random.Range(-spreadAngle, spreadAngle),
+            0f
+        );
+
+        Vector3 finalDirection = spreadRotation * baseDirection;
+
+        RaycastHit hit2;
+        bool hitPlayer = m_WeaponData.Fire(shootOrigin, finalDirection, out hit2);
+
+        Vector3 vfxTarget = hitPlayer ? hit2.point : shootOrigin + finalDirection * m_WeaponData.m_Range;
+        PlayShootVFX(shootOrigin, vfxTarget);
+
+        ShootRpc(shootOrigin, vfxTarget, transform.position.x, transform.position.z);
     }
 
-    [Rpc(SendTo.Server)]
-    public void ShootRpc(float x, float y, RpcParams rpc = default) => StartCoroutine(C_Shoot(x, y, rpc));
 
-    IEnumerator C_Shoot(float x, float y, RpcParams rpc)
+    [Rpc(SendTo.Server)]
+    public void ShootRpc(Vector3 pos, Vector3 pos2, float x, float y, RpcParams rpc = default)
+    {
+        PlayShootVFXRpc(pos, pos2);
+
+        StartCoroutine(C_ShootDataPing(x, y, rpc));
+    }
+
+    public void PlayShootVFX(Vector3 pos, Vector3 pos2)
+    {
+        GameObject bulletObj = Instantiate(m_Bullet, pos, Quaternion.identity);
+
+        LineRenderer renderer = bulletObj.GetComponent<LineRenderer>();
+        if (renderer == null)
+        {
+            Debug.LogError("Bullet prefab is missing a LineRenderer!");
+            Destroy(bulletObj);
+            return;
+        }
+
+        renderer.SetPosition(0, pos);
+        renderer.SetPosition(1, pos2);
+
+        Destroy(bulletObj, 0.05f);
+    }
+
+    [Rpc(SendTo.NotOwner)]
+    public void PlayShootVFXRpc(Vector3 pos, Vector3 dir) => PlayShootVFX(pos, dir);
+
+    IEnumerator C_ShootDataPing(float x, float y, RpcParams rpc)
     {
         yield return DataServices.C_PlayerKilledDataPing(PlayerSessionManager.instance.RelationalClientToUserData[rpc.Receive.SenderClientId].id, x, y, () =>
         {
