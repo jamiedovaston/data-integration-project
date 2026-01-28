@@ -7,8 +7,8 @@ using UnityEngine.InputSystem;
 public interface IPlayerable
 {
     NetworkObject NetObject { get; }
-
     IPlayerHealthable m_Health { get; set; }
+    Vector3 GetPosition();
     void TeleportRpc(Vector3 pos, Quaternion rot);
     void LockMovementRpc(bool locked);
 }
@@ -136,7 +136,13 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
     [Rpc(SendTo.Owner)]
     public void TeleportRpc(Vector3 pos, Quaternion rot)
     {
+        if (m_Controller != null)
+            m_Controller.enabled = false;
+
         transform.SetPositionAndRotation(pos, rot);
+
+        if (m_Controller != null)
+            m_Controller.enabled = true;
     }
 
     [Rpc(SendTo.Owner)]
@@ -145,4 +151,5 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
         m_Movement.CanMove = !locked;
     }
 
+    public Vector3 GetPosition() => transform.position;
 }

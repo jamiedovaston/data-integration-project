@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,11 +14,13 @@ public class PlayerSessionManager : NetworkBehaviour
     Match m_Match;
 
     [SerializeField] private GameObject m_PlayerObject;
+    [SerializeField] private TMP_Text m_CurrentWinnerText;
      
-    [SerializeField] private List<Transform> m_SpawnAreas = new List<Transform>();
+    public List<Transform> m_SpawnAreas = new List<Transform>();
 
     private Dictionary<ulong, IPlayerable> Matchmaker = new Dictionary<ulong, IPlayerable>();
     public Dictionary<ulong, PlayerServices.UserData_ResultBody> RelationalClientToUserData = new Dictionary<ulong, PlayerServices.UserData_ResultBody>();
+
 
     private bool playInSession = false;
 
@@ -50,6 +55,8 @@ public class PlayerSessionManager : NetworkBehaviour
         RelationalClientToUserData.Clear();
         Matchmaker.Clear();
 
+        StopAllCoroutines();
+
         if (IsHost)
         { 
             NetworkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
@@ -73,12 +80,20 @@ public class PlayerSessionManager : NetworkBehaviour
     {
         while (playInSession)
         {
+            yield return new WaitForSeconds(5.0f);
             yield return StartCoroutine(C_Match());
+
             foreach (ulong player in NetworkManager.ConnectedClientsIds)
             {
                 Matchmaker[player].TeleportRpc(m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position, Quaternion.identity);
             }
         }
+    }
+    public IPlayerable GetPlayerByClientId(ulong clientId)
+    {
+        if (Matchmaker.TryGetValue(clientId, out IPlayerable player))
+            return player;
+        return null;
     }
 
     private IEnumerator C_Match()
@@ -136,10 +151,20 @@ public class PlayerSessionManager : NetworkBehaviour
     {
         GameObject obj = Instantiate(m_PlayerObject, m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position, Quaternion.identity);
         obj.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID);
+        obj.GetComponent<NetworkedPlayer>().TeleportRpc(m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position, Quaternion.identity);
 
         Matchmaker.Add(clientID, obj.GetComponent<IPlayerable>());
 
         Debug.Log($"Authorized new player! Username: {RelationalClientToUserData[clientID].username}, ID: {RelationalClientToUserData[clientID].id}");
+    }
+
+
+    private IEnumerator C_CurrentWinnerTextShowcase(string winner)
+    {
+        m_CurrentWinnerText.text = $"Winner:  { winner }";
+        m_CurrentWinnerText.enabled = true;
+        yield return new WaitForSeconds(5.0f);
+        m_CurrentWinnerText.enabled = false;
     }
 
     private void OnClientDisconnectedCallback(ulong clientID)
@@ -156,5 +181,11 @@ public class PlayerSessionManager : NetworkBehaviour
         {
             playInSession = false;
         }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    public void DisplayWinnerRpc(string Winner)
+    {
+        StartCoroutine(C_CurrentWinnerTextShowcase(Winner));
     }
 }

@@ -1,10 +1,14 @@
+using System;
 using System.Collections;
 using TMPro;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
 public class Match : NetworkBehaviour
 {
+
+    public NetworkVariable<FixedString32Bytes> m_CurrentWinner = new NetworkVariable<FixedString32Bytes>();
     [SerializeField] private Transform[] m_MatchSpawnPositions = new Transform[2];
     [SerializeField] private TMP_Text m_WaitingForMatch;
     private IPlayerable[] player = new IPlayerable[2];
@@ -18,10 +22,13 @@ public class Match : NetworkBehaviour
 
         foreach (IPlayerable p in player)
         {
-            if (p.NetObject.IsLocalPlayer)
-            {
-                m_WaitingForMatch.enabled = false;
-            }
+            WaitingForMatchmakingSignRpc(
+                false,
+                new RpcSendParams
+                {
+                    Target = RpcTarget.Single(p.NetObject.OwnerClientId, RpcTargetUse.Temp)
+                }
+            );
         }
 
         yield return StartCoroutine(C_StartMatchProcess());
@@ -39,8 +46,10 @@ public class Match : NetworkBehaviour
 
         yield return new WaitForSeconds(3.0f);
 
-        player[0].LockMovementRpc(false);
-        player[1].LockMovementRpc(false);
+        if (!PlayerInvalid(player[0]))
+            player[0].LockMovementRpc(false);
+        if (!PlayerInvalid(player[1]))
+            player[1].LockMovementRpc(false);
     }
 
     public IEnumerator C_Gameplay()
@@ -49,6 +58,7 @@ public class Match : NetworkBehaviour
 
         while (true)
         {
+            
             if (PlayerInvalid(player[0]))
                 break;
 
@@ -61,13 +71,56 @@ public class Match : NetworkBehaviour
         Debug.Log("Match Gameplay Ended");
     }
 
-
     public void EndMatch()
     {
+        if (!IsServer)
+            return;
+
+        int winner = player[1].m_Health.IsDead ? 0 : 1;
+
+        PlayerSessionManager.instance.DisplayWinnerRpc(
+            PlayerSessionManager.instance.RelationalClientToUserData[player[winner].NetObject.OwnerClientId].username
+        );
+
+        WaitingForMatchmakingSignRpc(true, new RpcSendParams { Target = RpcTarget.Everyone });
+
+        for (int i = 0; i < 2; i++)
+        {
+            if (!PlayerInvalid(player[i]))
+            {
+                player[i].TeleportRpc(
+                    PlayerSessionManager.instance.m_SpawnAreas[UnityEngine.Random.Range(0, PlayerSessionManager.instance.m_SpawnAreas.Count)].position,
+                    Quaternion.identity
+                );
+            }
+        }
+
         player = null;
-        m_WaitingForMatch.enabled = true;
+
         Debug.Log("Match ended!");
     }
+
+    public override void OnNetworkSpawn()
+    {
+        // NetworkManager.OnClientDisconnectCallback += OnClientDisconnectCallback;
+    }
+
+
+    public override void OnNetworkDespawn()
+    {
+        StopAllCoroutines();
+        // NetworkManager.OnClientDisconnectCallback -= OnClientDisconnectCallback;
+    }
+
+    // private void OnClientDisconnectCallback(ulong obj)
+    // {
+    //     if (!IsServer) return;
+    // 
+    //     if (obj == player[0].NetObject.OwnerClientId || obj == player[1].NetObject.OwnerClientId)
+    //     {
+    // 
+    //     }
+    // }
 
     bool PlayerInvalid(IPlayerable p)
     {
@@ -88,4 +141,14 @@ public class Match : NetworkBehaviour
 
         return false;
     }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void WaitingForMatchmakingSignRpc(bool active, RpcParams rpc = default)
+    {
+        if (m_WaitingForMatch == null)
+            return;
+
+        m_WaitingForMatch.enabled = active;
+    }
+
 }

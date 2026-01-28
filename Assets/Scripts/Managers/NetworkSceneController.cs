@@ -12,4 +12,11 @@ public class NetworkSceneController : NetworkBehaviour
             LoadSceneMode.Additive
         );
     }
+
+    public override void OnNetworkDespawn()
+    {
+        SceneManager.UnloadSceneAsync(
+            "lobby"
+        );
+    }
 }

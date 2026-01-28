@@ -118,7 +118,7 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
                 if (!opponent.IsOwner)
                 {
                     IPlayerHealthable health = hit2.collider.GetComponent<IPlayerHealthable>();
-                    health.RequestDamage(m_WeaponData.m_Damage, NetworkObjectId);
+                    health.RequestDamage(m_WeaponData.m_Damage, OwnerClientId, transform.position);
                 }
             }
         }
@@ -126,16 +126,14 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
         Vector3 vfxTarget = hitObj ? hit2.point : shootOrigin + finalDirection * m_WeaponData.m_Range;
         PlayShootVFX(shootOrigin, vfxTarget);
 
-        ShootRpc(shootOrigin, vfxTarget, transform.position.x, transform.position.z);
+        ShootRpc(shootOrigin, vfxTarget);
     }
 
 
     [Rpc(SendTo.Server)]
-    public void ShootRpc(Vector3 pos, Vector3 pos2, float x, float y, RpcParams rpc = default)
+    public void ShootRpc(Vector3 pos, Vector3 pos2, RpcParams rpc = default)
     {
         PlayShootVFXRpc(pos, pos2);
-
-        StartCoroutine(C_ShootDataPing(x, y, rpc));
     }
 
     public void PlayShootVFX(Vector3 pos, Vector3 pos2)
@@ -158,19 +156,6 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
 
     [Rpc(SendTo.NotOwner)]
     public void PlayShootVFXRpc(Vector3 pos, Vector3 dir) => PlayShootVFX(pos, dir);
-
-    IEnumerator C_ShootDataPing(float x, float y, RpcParams rpc)
-    {
-        yield return DataServices.C_PlayerKilledDataPing(PlayerSessionManager.instance.RelationalClientToUserData[rpc.Receive.SenderClientId].id, x, y, () =>
-        {
-            Debug.Log("Success!");
-        },
-        () =>
-        {
-            Debug.Log("Fail!");
-        });
-
-    }
 
     void IPlayerShootable.Handle_AimPerformed(InputAction.CallbackContext context)
     {
