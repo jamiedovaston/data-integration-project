@@ -4,9 +4,19 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+public interface IPlayerable
+{
+    NetworkObject NetObject { get; }
+
+    IPlayerHealthable m_Health { get; set; }
+    void TeleportRpc(Vector3 pos, Quaternion rot);
+    void LockMovementRpc(bool locked);
+}
+
+
 [SelectionBase]
 [RequireComponent(typeof(CharacterController))]
-public class NetworkedPlayer : NetworkBehaviour
+public class NetworkedPlayer : NetworkBehaviour, IPlayerable
 {
     CharacterController m_Controller;
     InputSystem_Actions m_InputActions;
@@ -14,6 +24,9 @@ public class NetworkedPlayer : NetworkBehaviour
     IPlayerMovementable m_Movement;
     IPlayerLookable m_Look;
     IPlayerShootable m_Shoot;
+    public IPlayerHealthable m_Health { get; set; }
+
+    public NetworkObject NetObject => NetworkObject;
 
     [SerializeField] private Transform m_Orientation;
     [SerializeField] private CinemachineCamera m_Camera;
@@ -37,6 +50,10 @@ public class NetworkedPlayer : NetworkBehaviour
         m_Shoot = GetComponent<IPlayerShootable>();
         Debug.Assert(m_Shoot != null, "Shoot component is missing from player!", this);
         m_Shoot.Initialise(m_Camera);
+
+        m_Health = GetComponent<IPlayerHealthable>();
+        Debug.Assert(m_Health != null, "Health component is missing from player!", this);
+        m_Health.SetEnabled(false);
     }
 
     public override void OnNetworkSpawn()
@@ -114,5 +131,18 @@ public class NetworkedPlayer : NetworkBehaviour
         m_InputActions.System.Escape.performed -= HandleEscape;
     }
 
-    private void HandleEscape(InputAction.CallbackContext ctx) => OnPlayerEscapePressed?.Invoke(ctx);
+    private void HandleEscape(InputAction.CallbackContext ctx) => NetworkManager.Shutdown();
+
+    [Rpc(SendTo.Owner)]
+    public void TeleportRpc(Vector3 pos, Quaternion rot)
+    {
+        transform.SetPositionAndRotation(pos, rot);
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void LockMovementRpc(bool locked)
+    {
+        m_Movement.CanMove = !locked;
+    }
+
 }

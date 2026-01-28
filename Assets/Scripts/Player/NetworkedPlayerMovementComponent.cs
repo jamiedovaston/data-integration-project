@@ -1,9 +1,11 @@
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public interface IPlayerMovementable
 {
+    public bool CanMove { get; set; }
     void Initialise(CharacterController characterController);
     void Handle_MoveAction(InputAction.CallbackContext context);
     void Handle_JumpPerformed(InputAction.CallbackContext context);
@@ -57,8 +59,11 @@ public class NetworkedPlayerMovementComponent : NetworkBehaviour, IPlayerMovemen
     Vector3 moveDirection = Vector3.zero;
     Vector3 currentVelocity = Vector3.zero;
 
+    public bool CanMove { get; set; } = true;
+
     public void Initialise(CharacterController controller)
     {
+        CanMove = true;
         m_Controller = controller;
     }
 
@@ -213,6 +218,8 @@ public class NetworkedPlayerMovementComponent : NetworkBehaviour, IPlayerMovemen
         {
             moveDirection.y -= gravity * Time.deltaTime;
         }
+
+        if (!CanMove) return;
 
         m_Controller.Move(moveDirection * Time.deltaTime);
 

@@ -1,23 +1,29 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
-using UnityEditor.PackageManager;
 using UnityEngine;
 
 public class PlayerSessionManager : NetworkBehaviour
 {
     public static PlayerSessionManager instance;
 
+    Match m_Match;
+
     [SerializeField] private GameObject m_PlayerObject;
      
     [SerializeField] private List<Transform> m_SpawnAreas = new List<Transform>();
 
-    private Dictionary<ulong, bool> ClientInMatch = new Dictionary<ulong, bool>();
+    private Dictionary<ulong, IPlayerable> Matchmaker = new Dictionary<ulong, IPlayerable>();
     public Dictionary<ulong, PlayerServices.UserData_ResultBody> RelationalClientToUserData = new Dictionary<ulong, PlayerServices.UserData_ResultBody>();
+
+    private bool playInSession = false;
 
     private void Awake()
     {
         instance = this;
+
+        m_Match = GetComponent<Match>();
     }
 
     public override void OnNetworkSpawn()
@@ -41,6 +47,9 @@ public class PlayerSessionManager : NetworkBehaviour
         NetworkManager.OnClientDisconnectCallback -= OnClientDisconnectedCallback;
         NetworkManager.OnClientConnectedCallback -= OnClientConnectedCallback;
 
+        RelationalClientToUserData.Clear();
+        Matchmaker.Clear();
+
         if (IsHost)
         { 
             NetworkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
@@ -52,6 +61,32 @@ public class PlayerSessionManager : NetworkBehaviour
         if (!IsServer) return;
         if (NetworkManager.LocalClientId != obj)
             SpawnPlayer(obj);
+
+        if (NetworkManager.ConnectedClientsIds.Count >= 2 && !playInSession)
+        {
+            playInSession = true;
+            StartCoroutine(C_Matchmaking());
+        }
+    }
+
+    private IEnumerator C_Matchmaking()
+    {
+        while (playInSession)
+        {
+            yield return StartCoroutine(C_Match());
+            foreach (ulong player in NetworkManager.ConnectedClientsIds)
+            {
+                Matchmaker[player].TeleportRpc(m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position, Quaternion.identity);
+            }
+        }
+    }
+
+    private IEnumerator C_Match()
+    {
+        int p1 = UnityEngine.Random.Range(0, NetworkManager.ConnectedClientsIds.Count);
+        int p2 = UnityEngine.Random.Range(0, NetworkManager.ConnectedClientsIds.Count - 1);
+        if (p2 == p1) p2++;
+        yield return StartCoroutine(m_Match.C_Match(Matchmaker[NetworkManager.ConnectedClientsIds[p1]], Matchmaker[NetworkManager.ConnectedClientsIds[p2]]));
     }
 
     private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
@@ -65,7 +100,6 @@ public class PlayerSessionManager : NetworkBehaviour
         {
             var clientID = request.ClientNetworkId;
 
-            ClientInMatch.Add(clientID, false);
             RelationalClientToUserData.Add(clientID, data);
 
             response.Approved = true;
@@ -86,7 +120,6 @@ public class PlayerSessionManager : NetworkBehaviour
         {
             var clientID = NetworkManager.LocalClientId;
 
-            ClientInMatch.Add(clientID, false);
             RelationalClientToUserData.Add(clientID, data);
 
             SpawnPlayer(clientID);
@@ -104,17 +137,24 @@ public class PlayerSessionManager : NetworkBehaviour
         GameObject obj = Instantiate(m_PlayerObject, m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position, Quaternion.identity);
         obj.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID);
 
-        Debug.Log($"Authorized new player! Username: {RelationalClientToUserData[clientID].username} ID: {RelationalClientToUserData[clientID].id}");
+        Matchmaker.Add(clientID, obj.GetComponent<IPlayerable>());
+
+        Debug.Log($"Authorized new player! Username: {RelationalClientToUserData[clientID].username}, ID: {RelationalClientToUserData[clientID].id}");
     }
 
     private void OnClientDisconnectedCallback(ulong clientID)
     {
-        if(NetworkManager.ConnectedClients.ContainsKey(clientID))
+        if (NetworkManager.ConnectedClients.ContainsKey(clientID))
             NetworkManager.ConnectedClients[clientID].PlayerObject.Despawn();
 
-        if (ClientInMatch.ContainsKey(clientID))
-            ClientInMatch.Remove(clientID);
+        if (Matchmaker.ContainsKey(clientID))
+            Matchmaker.Remove(clientID);
         if (RelationalClientToUserData.ContainsKey(clientID))
             RelationalClientToUserData.Remove(clientID);
+
+        if (NetworkManager.ConnectedClientsIds.Count < 2 && playInSession)
+        {
+            playInSession = false;
+        }
     }
 }

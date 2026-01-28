@@ -4,6 +4,7 @@ using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public interface IPlayerShootable
 {
@@ -25,6 +26,10 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
     [SerializeField] private List<GameObject> m_WeaponVFX;
     [SerializeField] private GameObject m_Bullet;
 
+    [Header("Shooter UI")]
+    [SerializeField] private Canvas m_PlayerCanvas;
+    [SerializeField] private Image m_Crosshair;
+
     [Header("Aim Settings")]
     [SerializeField] private float m_NeutralFOV = 60.0f;
     [SerializeField] private float m_AimFOV = 30.0f;
@@ -38,7 +43,7 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
 
     private float lastTimeShot = -1.0f;
 
-    private float currentAimFOV;
+    private float currentAimFloat, currentAimFOV;
 
     private bool Input_Shooting = false;
     private bool Input_Aiming = false;
@@ -50,13 +55,23 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
         m_WeaponModel = Instantiate(m_WeaponData.m_Model, m_WeaponHand);
     }
 
+    public override void OnNetworkSpawn()
+    {
+        m_PlayerCanvas.enabled = NetworkObject.IsLocalPlayer;
+    }
+
     private void Update()
     {
         if (!NetworkObject.IsLocalPlayer)
             return;
 
-        currentAimFOV = Mathf.Lerp(currentAimFOV, Input_Aiming ? m_AimFOV : m_NeutralFOV, m_AimDelay * Time.deltaTime);
+        currentAimFloat = Mathf.Lerp(currentAimFloat, Input_Aiming ? 1 : 0, m_AimDelay * Time.deltaTime);
+
+        float fovDiff = m_NeutralFOV - m_AimFOV;
+        currentAimFOV = m_AimFOV + fovDiff * (1.0f - currentAimFloat);
         m_Camera.Lens.FieldOfView = currentAimFOV;
+
+        m_Crosshair.transform.localScale  = Vector3.one + Vector3.one * (1.0f - currentAimFloat);
 
         if (lastTimeShot + m_WeaponData.m_ShootDelay > Time.fixedTime)
             return;
@@ -93,9 +108,22 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
         Vector3 finalDirection = spreadRotation * baseDirection;
 
         RaycastHit hit2;
-        bool hitPlayer = m_WeaponData.Fire(shootOrigin, finalDirection, out hit2);
+        bool hitObj = m_WeaponData.Fire(shootOrigin, finalDirection, out hit2);
 
-        Vector3 vfxTarget = hitPlayer ? hit2.point : shootOrigin + finalDirection * m_WeaponData.m_Range;
+        if (hit2.collider != null)
+        {
+            NetworkObject opponent = hit2.collider.GetComponent<NetworkObject>();
+            if (opponent != null)
+            {
+                if (!opponent.IsOwner)
+                {
+                    IPlayerHealthable health = hit2.collider.GetComponent<IPlayerHealthable>();
+                    health.RequestDamage(m_WeaponData.m_Damage, NetworkObjectId);
+                }
+            }
+        }
+
+        Vector3 vfxTarget = hitObj ? hit2.point : shootOrigin + finalDirection * m_WeaponData.m_Range;
         PlayShootVFX(shootOrigin, vfxTarget);
 
         ShootRpc(shootOrigin, vfxTarget, transform.position.x, transform.position.z);

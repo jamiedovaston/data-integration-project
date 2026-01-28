@@ -9,6 +9,7 @@ public class WeaponData : ScriptableObject
 
     [Header("Stats")]
     [field: SerializeField] public float m_ShootDelay { get; private set; } = 0.3f;
+    [field: SerializeField] public float m_Damage { get; private set; } = 15.0f;
     [field: SerializeField] public float m_Range { get; private set; } = 15.0f;
 
     public bool Fire(Vector3 position, Vector3 direction, out RaycastHit hit)
@@ -18,18 +19,6 @@ public class WeaponData : ScriptableObject
         if (!Physics.Raycast(position, direction, out hit, m_Range))
             return false;
 
-        if (!hit.collider.TryGetComponent(out NetworkObject netObj))
-        {
-            netObj = hit.collider.GetComponentInParent<NetworkObject>();
-        }
-
-        if (netObj == null)
-            return false;
-
-        if (netObj.IsOwner)
-            return false;
-
-        Debug.Log("Hit Player!");
         return true;
     }
 }
