@@ -1,0 +1,36 @@
+# Unity project files (not needed in Docker - only the build)
+Assets/
+Packages/
+ProjectSettings/
+UserSettings/
+Library/
+Logs/
+Temp/
+obj/
+
+# IDE
+.idea/
+.vs/
+*.csproj
+*.sln
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+LICENSE
+
+# GitHub
+.github/
+
+# Build artifacts we don't need
+build/StandaloneWindows64/
+build/StandaloneOSX/
+build/WebGL/
+
+# Other
+*.log
+*.tmp

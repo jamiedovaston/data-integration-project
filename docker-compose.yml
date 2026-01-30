@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  game-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_PATH: build/server
+    image: game-server:latest
+    container_name: game-server
+    restart: unless-stopped
+    ports:
+      - "7777:7777/udp"
+    environment:
+      - UNITY_SERVER=1
+      - GAME_SERVER_IP=0.0.0.0
+      - GAME_SERVER_PORT=7777
+    # Uncomment to persist logs
+    # volumes:
+    #   - ./logs:/app/logs
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
