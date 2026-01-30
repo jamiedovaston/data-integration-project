@@ -1,58 +1,40 @@
+using System;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 public class AutoNetworkManager : MonoBehaviour
 {
-    private NetworkManager networkManager;
-
-    private void Awake()
+    void Start()
     {
-        networkManager = GetComponent<NetworkManager>();
-        if (networkManager == null)
+        // Default values
+        string ip = "0.0.0.0";
+        ushort port = 7777;
+
+        // Read from environment variables if set
+        string envIp = Environment.GetEnvironmentVariable("GAME_SERVER_IP");
+        string envPort = Environment.GetEnvironmentVariable("GAME_SERVER_PORT");
+
+        if (!string.IsNullOrEmpty(envIp))
+            ip = envIp;
+
+        if (!string.IsNullOrEmpty(envPort) && ushort.TryParse(envPort, out ushort parsedPort))
+            port = parsedPort;
+
+        Debug.Log($"Starting server on {ip}:{port}");
+
+        // Set transport data
+        var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+        if (transport == null)
         {
-            Debug.LogError("NetworkManager component is missing!");
+            Debug.LogError("UnityTransport component not found on NetworkManager!");
             return;
         }
 
-#if UNITY_EDITOR
-        // In editor, do nothing special — behave normally
-        Debug.Log("Editor detected: NetworkManager will behave as normal.");
-#else
-        // Non-editor builds
-        AutoStartNetwork();
-#endif
-    }
+        transport.ConnectionData.Address = ip;
+        transport.ConnectionData.Port = port;
 
-    private void AutoStartNetwork()
-    {
-#if UNITY_SERVER
-        StartServer();
-#else
-        StartClient();
-#endif
-    }
-
-    private void StartServer()
-    {
-        if (!networkManager.StartServer())
-        {
-            Debug.LogError("Failed to start server!");
-        }
-        else
-        {
-            Debug.Log("Server started automatically.");
-        }
-    }
-
-    private void StartClient()
-    {
-        if (!networkManager.StartClient())
-        {
-            Debug.LogError("Failed to start client!");
-        }
-        else
-        {
-            Debug.Log("Client started automatically.");
-        }
+        // Start server
+        NetworkManager.Singleton.StartServer();
     }
 }
