@@ -2,12 +2,7 @@ version: '3.8'
 
 services:
   game-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILD_PATH: build/server
-    image: game-server:latest
+    image: jamiedovaston/data-integration-project:e54ec79
     container_name: game-server
     restart: unless-stopped
     ports:
