@@ -76,6 +76,12 @@ jobs:
           name: server-build
           path: build/server
 
+      - name: List build contents
+        run: |
+          echo "=== Build directory contents ==="
+          find build/server -type f -name "*.x86_64" || echo "No .x86_64 files found"
+          ls -la build/server/
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
