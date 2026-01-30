@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   game-server:
-    image: jamiedovaston/data-integration-project:e54ec79
+    image: ghcr.io/jamiedovaston/data-integration-project:e54ec79
     container_name: game-server
     restart: unless-stopped
     ports:
@@ -11,9 +11,8 @@ services:
       - UNITY_SERVER=1
       - GAME_SERVER_IP=0.0.0.0
       - GAME_SERVER_PORT=7777
-    # Uncomment to persist logs
-    # volumes:
-    #   - ./logs:/app/logs
+    volumes:
+      - ./logs:/app/logs
     # Resource limits (adjust based on your needs)
     deploy:
       resources:

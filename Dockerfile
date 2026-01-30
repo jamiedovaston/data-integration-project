@@ -26,7 +26,7 @@ WORKDIR /app
 COPY ${BUILD_PATH}/ ./
 
 # Make the server executable
-RUN chmod +x ./GameServer && \
+RUN chmod +x ./data-project-server-build.x86_64 && \
     chown -R gameserver:gameserver /app
 
 # Switch to non-root user
@@ -37,7 +37,7 @@ EXPOSE 7777/udp
 
 # Health check (optional - adjust based on your game's needs)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD pgrep -x GameServer || exit 1
+    CMD pgrep -f data-project-server-build || exit 1
 
 # Set environment variables for headless mode
 ENV DISPLAY=:0
@@ -45,5 +45,5 @@ ENV GAME_SERVER_IP=${GAME_SERVER_IP}
 ENV GAME_SERVER_PORT=${GAME_SERVER_PORT}
 
 # Run the server
-ENTRYPOINT ["./GameServer", "-batchmode", "-nographics"]
+ENTRYPOINT ["./data-project-server-build.x86_64", "-batchmode", "-nographics"]
 CMD ["-logFile", "/dev/stdout"]

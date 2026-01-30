@@ -47,7 +47,7 @@ jobs:
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: StandaloneLinux64
-          buildName: GameServer
+          buildName: data-project-server-build
           buildsPath: build
           buildMethod: ''
           customParameters: -standaloneBuildSubtarget Server
