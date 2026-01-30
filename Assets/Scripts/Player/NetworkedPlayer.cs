@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
@@ -6,6 +7,7 @@ using UnityEngine.InputSystem;
 
 public interface IPlayerable
 {
+    void Initialise(string username, Vector3 position);
     NetworkObject NetObject { get; }
     IPlayerHealthable m_Health { get; set; }
     Vector3 GetPosition();
@@ -20,6 +22,7 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
 {
     CharacterController m_Controller;
     InputSystem_Actions m_InputActions;
+    string username;
 
     IPlayerMovementable m_Movement;
     IPlayerLookable m_Look;
@@ -30,8 +33,26 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
 
     [SerializeField] private Transform m_Orientation;
     [SerializeField] private CinemachineCamera m_Camera;
+    [SerializeField] private TMP_Text m_GlobalUsernameText, m_LocalUsernameText;
 
     public static Action<InputAction.CallbackContext> OnPlayerEscapePressed;
+
+    public void Initialise(string username, Vector3 position)
+    {
+        UsernameRpc(username);
+        TeleportRpc(position, Quaternion.identity);
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void UsernameRpc(string username)
+    {
+        this.username = username;
+        m_GlobalUsernameText.text = username;
+        m_LocalUsernameText.text = username;
+
+        m_GlobalUsernameText.enabled = !IsLocalPlayer;
+        m_LocalUsernameText.enabled = IsLocalPlayer;
+    }
 
     private void Awake()
     {
@@ -92,7 +113,15 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
         m_InputActions.Player.Crouch.performed += m_Movement.Handle_SlidePerformed;
         m_InputActions.Player.Crouch.canceled += m_Movement.Handle_SlideCanceled;
 
+        NetworkManager.OnClientConnectedCallback += OnClientConnectedCallback;
+
         m_InputActions.System.Escape.performed += HandleEscape;
+    }
+
+    private void OnClientConnectedCallback(ulong obj)
+    {
+        if(IsLocalPlayer)
+            UsernameRpc(username);
     }
 
     public override void OnNetworkDespawn()
@@ -128,6 +157,8 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
         m_InputActions.Player.Crouch.performed -= m_Movement.Handle_SlidePerformed;
         m_InputActions.Player.Crouch.canceled -= m_Movement.Handle_SlideCanceled;
 
+        NetworkManager.OnClientConnectedCallback -= OnClientConnectedCallback;
+
         m_InputActions.System.Escape.performed -= HandleEscape;
     }
 
@@ -152,4 +183,5 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
     }
 
     public Vector3 GetPosition() => transform.position;
+
 }

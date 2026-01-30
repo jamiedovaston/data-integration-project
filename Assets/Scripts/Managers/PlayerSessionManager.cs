@@ -1,9 +1,6 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -22,7 +19,7 @@ public class PlayerSessionManager : NetworkBehaviour
     public Dictionary<ulong, PlayerServices.UserData_ResultBody> RelationalClientToUserData = new Dictionary<ulong, PlayerServices.UserData_ResultBody>();
 
 
-    private bool playInSession = false;
+    [HideInInspector] public bool playInSession = false;
 
     private void Awake()
     {
@@ -81,7 +78,8 @@ public class PlayerSessionManager : NetworkBehaviour
         while (playInSession)
         {
             yield return new WaitForSeconds(5.0f);
-            yield return StartCoroutine(C_Match());
+            if (playInSession)
+                yield return StartCoroutine(C_Match());
 
             foreach (ulong player in NetworkManager.ConnectedClientsIds)
             {
@@ -151,7 +149,7 @@ public class PlayerSessionManager : NetworkBehaviour
     {
         GameObject obj = Instantiate(m_PlayerObject, m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position, Quaternion.identity);
         obj.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID);
-        obj.GetComponent<NetworkedPlayer>().TeleportRpc(m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position, Quaternion.identity);
+        obj.GetComponent<IPlayerable>().Initialise(RelationalClientToUserData[clientID].username, m_SpawnAreas[UnityEngine.Random.Range(0, m_SpawnAreas.Count)].position);
 
         Matchmaker.Add(clientID, obj.GetComponent<IPlayerable>());
 

@@ -31,8 +31,10 @@ public class Match : NetworkBehaviour
             );
         }
 
-        yield return StartCoroutine(C_StartMatchProcess());
-        yield return StartCoroutine(C_Gameplay());
+        if (PlayerSessionManager.instance.playInSession)
+            yield return StartCoroutine(C_StartMatchProcess());
+        if (PlayerSessionManager.instance.playInSession)
+            yield return StartCoroutine(C_Gameplay());
         EndMatch();
     }
 
@@ -100,27 +102,10 @@ public class Match : NetworkBehaviour
         Debug.Log("Match ended!");
     }
 
-    public override void OnNetworkSpawn()
-    {
-        // NetworkManager.OnClientDisconnectCallback += OnClientDisconnectCallback;
-    }
-
-
     public override void OnNetworkDespawn()
     {
         StopAllCoroutines();
-        // NetworkManager.OnClientDisconnectCallback -= OnClientDisconnectCallback;
     }
-
-    // private void OnClientDisconnectCallback(ulong obj)
-    // {
-    //     if (!IsServer) return;
-    // 
-    //     if (obj == player[0].NetObject.OwnerClientId || obj == player[1].NetObject.OwnerClientId)
-    //     {
-    // 
-    //     }
-    // }
 
     bool PlayerInvalid(IPlayerable p)
     {

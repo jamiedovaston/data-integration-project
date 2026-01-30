@@ -22,7 +22,6 @@ public class NetworkObserver_UI : NetworkBehaviour
             m_PlayerCount.Value = 0;
 
             NetworkManager.Singleton.OnClientConnectedCallback += IncrementPlayerCount;
-
             NetworkManager.Singleton.OnClientDisconnectCallback += DeincrementPlayerCount;
         }
     }

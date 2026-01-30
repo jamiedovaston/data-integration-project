@@ -1355,6 +1355,7 @@ MonoBehaviour:
   - {fileID: 708663169}
   - {fileID: 1013029465}
   - {fileID: 1645763128}
+  playInSession: 0
 --- !u!114 &594238047
 MonoBehaviour:
   m_ObjectHideFlags: 0
