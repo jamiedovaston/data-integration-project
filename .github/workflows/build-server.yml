@@ -37,7 +37,11 @@ jobs:
         id: build
         uses: game-ci/unity-builder@v4
         env:
+          # For Personal license: set UNITY_LICENSE (contents of .ulf file)
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          # For Pro/Plus license: set UNITY_SERIAL instead
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          # Required for both license types
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
