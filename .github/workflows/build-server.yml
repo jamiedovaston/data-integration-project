@@ -50,7 +50,7 @@ jobs:
           buildName: data-project-server-build
           buildsPath: build
           buildMethod: ''
-          customParameters: -standaloneBuildSubtarget Server
+          customParameters: -buildProfile "Assets/Settings/Build Profiles/LinuxServerBuild.asset"
 
       - name: Debug - List all build outputs
         run: |
