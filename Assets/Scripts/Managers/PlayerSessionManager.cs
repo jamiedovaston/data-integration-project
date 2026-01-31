@@ -10,6 +10,8 @@ public class PlayerSessionManager : NetworkBehaviour
 
     Match m_Match;
 
+    private Dictionary<ulong, NetworkManager.ConnectionApprovalResponse> PendingApprovals = new Dictionary<ulong, NetworkManager.ConnectionApprovalResponse>();
+
     [SerializeField] private GameObject m_PlayerObject;
     [SerializeField] private TMP_Text m_CurrentWinnerText;
      
@@ -102,28 +104,46 @@ public class PlayerSessionManager : NetworkBehaviour
         yield return StartCoroutine(m_Match.C_Match(Matchmaker[NetworkManager.ConnectedClientsIds[p1]], Matchmaker[NetworkManager.ConnectedClientsIds[p2]]));
     }
 
-    private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+    private void OnConnectionApprovalCallback(
+    NetworkManager.ConnectionApprovalRequest request,
+    NetworkManager.ConnectionApprovalResponse response)
     {
         response.Pending = true;
         response.CreatePlayerObject = false;
-        response.PlayerPrefabHash = null;
 
-        StartCoroutine(PlayerServices.C_AuthorizeNewPlayer(
-        data =>
-        {
-            var clientID = request.ClientNetworkId;
+        // Store response safely
+        PendingApprovals[request.ClientNetworkId] = response;
 
-            RelationalClientToUserData.Add(clientID, data);
+        StartCoroutine(AuthorizeClient(request.ClientNetworkId));
+    }
 
-            response.Approved = true;
-            response.Pending = false;
-        },
-        () =>
-        {
-            response.Reason = "Disconnected from server!";
-            response.Approved = false;
-            response.Pending = false;
-        }));
+    private IEnumerator AuthorizeClient(ulong clientId)
+    {
+        yield return StartCoroutine(PlayerServices.C_AuthorizeNewPlayer(
+            data =>
+            {
+                RelationalClientToUserData[clientId] = data;
+
+                if (!PendingApprovals.TryGetValue(clientId, out var response))
+                    return;
+
+                response.Approved = true;
+                response.Pending = false;
+
+                PendingApprovals.Remove(clientId);
+            },
+            () =>
+            {
+                if (!PendingApprovals.TryGetValue(clientId, out var response))
+                    return;
+
+                response.Reason = "Disconnected from server!";
+                response.Approved = false;
+                response.Pending = false;
+
+                PendingApprovals.Remove(clientId);
+            }
+        ));
     }
 
     private IEnumerator AuthoriseHost()
@@ -155,7 +175,6 @@ public class PlayerSessionManager : NetworkBehaviour
 
         Debug.Log($"Authorized new player! Username: {RelationalClientToUserData[clientID].username}, ID: {RelationalClientToUserData[clientID].id}");
     }
-
 
     private IEnumerator C_CurrentWinnerTextShowcase(string winner)
     {
