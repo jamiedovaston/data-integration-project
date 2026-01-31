@@ -34,10 +34,10 @@ public class PlayerSessionManager : NetworkBehaviour
 
         NetworkManager.OnClientDisconnectCallback += OnClientDisconnectedCallback;
         NetworkManager.OnClientConnectedCallback += OnClientConnectedCallback;
+        NetworkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
 
         if (IsHost)
         {
-            NetworkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             StartCoroutine(AuthoriseHost());
         }
     }
@@ -54,10 +54,7 @@ public class PlayerSessionManager : NetworkBehaviour
 
         StopAllCoroutines();
 
-        if (IsHost)
-        { 
-            NetworkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-        }
+        NetworkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
     }
 
     private void OnClientConnectedCallback(ulong obj)
