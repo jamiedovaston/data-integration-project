@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class AutoNetworkManager : MonoBehaviour
 {
+#if LINUX_SERVER_BUILD
     void Start()
     {
         // Default values
@@ -37,4 +38,5 @@ public class AutoNetworkManager : MonoBehaviour
         // Start server
         NetworkManager.Singleton.StartServer();
     }
+#endif
 }
