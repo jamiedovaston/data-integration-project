@@ -39,4 +39,10 @@ public class AutoNetworkManager : MonoBehaviour
         NetworkManager.Singleton.StartServer();
     }
 #endif
+#if WINDOWS_BUILD
+    void Start()
+    {
+        NetworkManager.Singleton.StartClient();
+    }
+#endif
 }

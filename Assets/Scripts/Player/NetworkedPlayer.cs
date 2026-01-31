@@ -114,8 +114,6 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
         m_InputActions.Player.Crouch.canceled += m_Movement.Handle_SlideCanceled;
 
         NetworkManager.OnClientConnectedCallback += OnClientConnectedCallback;
-
-        m_InputActions.System.Escape.performed += HandleEscape;
     }
 
     private void OnClientConnectedCallback(ulong obj)
@@ -158,8 +156,6 @@ public class NetworkedPlayer : NetworkBehaviour, IPlayerable
         m_InputActions.Player.Crouch.canceled -= m_Movement.Handle_SlideCanceled;
 
         NetworkManager.OnClientConnectedCallback -= OnClientConnectedCallback;
-
-        m_InputActions.System.Escape.performed -= HandleEscape;
     }
 
     private void HandleEscape(InputAction.CallbackContext ctx) => NetworkManager.Shutdown();

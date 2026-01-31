@@ -6,34 +6,9 @@ public class NetworkManager_UI : NetworkBehaviour
 {
     // HOME
     public Canvas m_DisconnectedPanel;
-    public Button m_HostButton, m_ClientButton, m_ServerButton;
 
     // LOBBY
     public Canvas m_ConnectedPanel;
-    public Button m_DisconnectButton;
-
-    private void Start()
-    {
-        m_HostButton.onClick.AddListener(() =>
-        {
-            NetworkManager.Singleton.StartHost();
-        });
-
-        m_ServerButton.onClick.AddListener(() =>
-        {
-            NetworkManager.Singleton.StartServer();
-        });
-
-        m_ClientButton.onClick.AddListener(() =>
-        {
-            NetworkManager.Singleton.StartClient();
-        });
-
-        m_DisconnectButton.onClick.AddListener(() =>
-        {
-            NetworkManager.Singleton.Shutdown();
-        });
-    }
 
     public override void OnNetworkSpawn()
     {

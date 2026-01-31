@@ -23,7 +23,6 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
     [SerializeField] private WeaponData m_WeaponData;
     [SerializeField] private Transform m_WeaponHand;
     [SerializeField] private LayerMask m_PlayerLayer;
-    [SerializeField] private List<GameObject> m_WeaponVFX;
     [SerializeField] private GameObject m_Bullet;
 
     [Header("Shooter UI")]
