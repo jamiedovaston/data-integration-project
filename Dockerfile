@@ -45,5 +45,5 @@ ENV GAME_SERVER_IP=${GAME_SERVER_IP}
 ENV GAME_SERVER_PORT=${GAME_SERVER_PORT}
 
 # Run the server
-ENTRYPOINT ["./data-project-server-build", "-batchmode", "-nographics"]
+ENTRYPOINT ["./data-project-server-build"]
 CMD ["-logFile", "/dev/stdout"]
