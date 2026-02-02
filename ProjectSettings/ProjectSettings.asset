@@ -824,7 +824,9 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Server: LINUX_SERVER_BUILD
+    Standalone: WINDOWS_BUILD
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
