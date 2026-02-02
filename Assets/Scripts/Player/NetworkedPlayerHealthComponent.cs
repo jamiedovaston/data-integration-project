@@ -17,7 +17,7 @@ public class NetworkedPlayerHealthComponent : NetworkBehaviour, IPlayerHealthabl
     [SerializeField] private float m_DefaultHealth = 100f;
     [SerializeField] private Image m_HealthBar;
 
-    private bool m_CanTakeDamage = false; // NEW: control if damage is allowed
+    private bool m_CanTakeDamage = false;
 
     private NetworkVariable<float> m_Health =
         new NetworkVariable<float>(
@@ -27,13 +27,12 @@ public class NetworkedPlayerHealthComponent : NetworkBehaviour, IPlayerHealthabl
 
     public bool IsDead => m_Health.Value <= 0f;
 
-    /* ================= SERVER ================= */
     public void InitialiseMatch()
     {
         if (!IsServer) return;
 
         m_Health.Value = m_DefaultHealth;
-        SetDamageEnabled(true); // allow damage now
+        SetDamageEnabled(true);
     }
 
     [Rpc(SendTo.Server)]
@@ -45,7 +44,6 @@ public class NetworkedPlayerHealthComponent : NetworkBehaviour, IPlayerHealthabl
 
     private void ApplyDamage(float amount, ulong attackerId, Vector3 attackerPosition)
     {
-        // NEW: skip if damage not allowed
         if (!m_CanTakeDamage) return;
 
         m_Health.Value = Mathf.Max(0, m_Health.Value - amount);
@@ -60,7 +58,6 @@ public class NetworkedPlayerHealthComponent : NetworkBehaviour, IPlayerHealthabl
     {
         Vector3 deadPos = transform.position;
 
-        // Dead player ping
         StartCoroutine(DataServices.C_PlayerDiedDataPing(
             PlayerSessionManager.instance.RelationalClientToUserData[OwnerClientId].id,
             deadPos.x,
@@ -69,7 +66,6 @@ public class NetworkedPlayerHealthComponent : NetworkBehaviour, IPlayerHealthabl
             () => Debug.Log("Dead player data ping fail!")
         ));
 
-        // Killer ping
         StartCoroutine(DataServices.C_PlayerKilledDataPing(
             PlayerSessionManager.instance.RelationalClientToUserData[killerId].id,
             killerPosition.x,
@@ -78,10 +74,9 @@ public class NetworkedPlayerHealthComponent : NetworkBehaviour, IPlayerHealthabl
             () => Debug.Log("Killer data ping fail!")
         ));
 
-        SetDamageEnabled(false); // disable damage after death
+        SetDamageEnabled(false);
     }
 
-    /* ================= CLIENT ================= */
     public void RequestDamage(float amount, ulong attackerId, Vector3 attackerPosition)
     {
         if (IsServer)
@@ -94,13 +89,11 @@ public class NetworkedPlayerHealthComponent : NetworkBehaviour, IPlayerHealthabl
         }
     }
 
-    /* ================= DAMAGE CONTROL ================= */
     public void SetDamageEnabled(bool canTakeDamage)
     {
         m_CanTakeDamage = canTakeDamage;
     }
 
-    /* ================= UI ================= */
     public override void OnNetworkSpawn()
     {
         m_Health.OnValueChanged += OnHealthChanged;
@@ -117,7 +110,6 @@ public class NetworkedPlayerHealthComponent : NetworkBehaviour, IPlayerHealthabl
             m_HealthBar.fillAmount = newValue / m_DefaultHealth;
     }
 
-    // IPlayerHealthable implementation
     public void SetEnabled(bool enabled)
     {
         SetDamageEnabled(enabled);

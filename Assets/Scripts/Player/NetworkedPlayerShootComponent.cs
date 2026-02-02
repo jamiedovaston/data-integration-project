@@ -132,6 +132,14 @@ public class NetworkedPlayerShootComponent : NetworkBehaviour, IPlayerShootable
     [Rpc(SendTo.Server)]
     public void ShootRpc(Vector3 pos, Vector3 pos2, RpcParams rpc = default)
     {
+        StartCoroutine(DataServices.C_PlayerShootDataPing(
+            PlayerSessionManager.instance.RelationalClientToUserData[OwnerClientId].id,
+            transform.position.x,
+            transform.position.z,
+            () => Debug.Log("Shoot data ping success!"),
+            () => Debug.Log("Shoot data ping fail!")
+        ));
+
         PlayShootVFXRpc(pos, pos2);
     }
 
